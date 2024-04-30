@@ -16,31 +16,43 @@ type User struct {
 	IsAdmin     bool      `gorm:"default:false"`
 }
 
-// Order представляет заказ в системе
-type Order struct {
-	gorm.Model
-	UserID      uint          // Ссылка на пользователя
-	TotalSum    float64       // Общая сумма заказа
-	TotalWeight float64       // Общий вес заказа
-	Details     []OrderDetail `gorm:"foreignKey:OrderID;references:ID"`
+// Credentials структура для данных аутентификации пользователя.
+type Credentials struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
-// OrderItem представляет элемент заказа в системе
-type OrderDetail struct {
-	gorm.Model
-	OrderID uint  // ID заказа
-	MenuID  uint  // ID меню
-	Count   int   // Количество
-	Menu    Menu  `gorm:"foreignKey:MenuID"`
-	Order   Order `gorm:"foreignKey:OrderID;references:ID"`
-}
-
-// Menu представляет элемент меню в системе столовой университета
-type Menu struct {
-	gorm.Model
-	Name        string
-	Price       float64
+type Dish struct {
+	ID          uint    `gorm:"primaryKey"`
+	Name        string  `gorm:"not null"`
+	Price       float64 `gorm:"not null"`
 	Description string
 	InStock     bool
-	Weight      int // Вес в граммах
+	Weight      int
+}
+
+type Order struct {
+	ID       uint    `gorm:"primaryKey"`
+	UserID   uint    `gorm:"not null"`
+	TotalSum float64 `gorm:"not null"`
+	User     User    `gorm:"foreignKey:UserID"`
+}
+
+type OrderItem struct {
+	ID       uint  `gorm:"primaryKey"`
+	OrderID  uint  `gorm:"not null"`
+	DishID   uint  `gorm:"not null"`
+	Quantity int   `gorm:"not null"`
+	Order    Order `gorm:"foreignKey:OrderID"`
+	Dish     Dish  `gorm:"foreignKey:DishID"`
+}
+
+type OrderRequest struct {
+	UserID    uint       `json:"user_id"`
+	CartItems []CartItem `json:"cart_items"`
+}
+
+type CartItem struct {
+	DishID   uint `json:"dish_id"`
+	Quantity int  `json:"quantity"`
 }
