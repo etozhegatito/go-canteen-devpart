@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+</head>
+<body>
+<h2>Sign Up</h2>
+<form id="signupForm">
+    <input type="text" id="name" placeholder="First Name" required><br>
+    <input type="text" id="surname" placeholder="Last Name" required><br>
+    <input type="email" id="email" placeholder="Email" required><br>
+    <input type="password" id="password" placeholder="Password" required><br>
+    <input type="text" id="phone" placeholder="Phone" required><br>
+    <input type="number" id="age" placeholder="Age" required min="0" max="150"><br>
+    <button type="button" onclick="signUp()">Sign Up</button>
+</form>
+
+<script>
+    function signUp() {
+        var formData = {
+            name: document.getElementById('name').value,
+            surname: document.getElementById('surname').value,
+            email: document.getElementById('email').value,
+            password: document.getElementById('password').value,
+            phone: document.getElementById('phone').value,
+            age: parseInt(document.getElementById('age').value)
+        };
+
+        fetch('/signup', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(formData)
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                alert('Success: ' + JSON.stringify(data));
+            })
+            .catch((error) => {
+                alert('Error:' + error);
+            });
+
+    }
+</script>
+</body>
+</html>

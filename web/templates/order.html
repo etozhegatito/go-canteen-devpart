@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>University Canteen Orders</title>
+    <style>
+        .container {
+            display: flex;
+            justify-content: space-between;
+            padding: 20px;
+        }
+        .menu, .cart {
+            width: 48%;
+        }
+        .dish, .cart-item {
+            border: 1px solid #ddd;
+            margin: 10px;
+            padding: 10px;
+        }
+        button {
+            padding: 10px;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="menu">
+        <h2>Menu</h2>
+        <!-- Menu items will be loaded here -->
+    </div>
+    <div class="cart">
+        <h2>Cart</h2>
+        <div id="cart-items">
+            <!-- Cart items will be displayed here -->
+        </div>
+        <button onclick="submitOrder()">Place Order</button>
+    </div>
+</div>
+
+<script>
+    // Assuming 'UserID' is known and constant for simplification
+    const userID = 1;
+    let cart = [];
+
+    document.addEventListener("DOMContentLoaded", function() {
+        fetchMenu();
+    });
+
+    function fetchMenu() {
+        fetch('/dishes')
+            .then(response => response.json())
+            .then(dishes => {
+                const menuDiv = document.querySelector('.menu');
+                dishes.forEach(dish => {
+                    const dishDiv = document.createElement('div');
+                    dishDiv.className = 'dish';
+                    dishDiv.innerHTML = `<h3>${dish.Name} ($${dish.Price})</h3>
+                                     <p>${dish.Description || 'No description available'}</p>
+                                     <button onclick='addToCart(${JSON.stringify(dish)})'>Add to Cart</button>`;
+                    menuDiv.appendChild(dishDiv);
+                });
+            })
+            .catch(error => {
+                console.error('Error loading dishes:', error);
+                alert('Failed to load dishes');
+            });
+    }
+
+    function addToCart(dish) {
+        const itemIndex = cart.findIndex(item => item.dish_id === dish.ID);  // Обратите внимание на ID
+        if (itemIndex > -1) {
+            cart[itemIndex].quantity += 1;
+        } else {
+            cart.push({ dish_id: dish.ID, name: dish.Name, quantity: 1 });  // Сохраняем также имя блюда
+        }
+        displayCart();
+    }
+
+    function displayCart() {
+        const cartItemsDiv = document.getElementById('cart-items');
+        cartItemsDiv.innerHTML = '';  // Очистить текущее содержимое корзины
+        cart.forEach(item => {
+            const itemDiv = document.createElement('div');
+            itemDiv.className = 'cart-item';
+            itemDiv.innerHTML = `<p>${item.name}: ${item.quantity}</p>`;  // Используйте 'name', сохраненное при добавлении в корзину
+            cartItemsDiv.appendChild(itemDiv);
+        });
+    }
+
+
+    function submitOrder() {
+        fetch('/orders', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ user_id: userID, cart_items: cart })
+        }).then(response => {
+            if (response.ok) {
+                alert('Order placed successfully!');
+                cart = []; // Clear cart
+                displayCart(); // Update cart display
+            } else {
+                alert('Failed to place order');
+            }
+        });
+    }
+</script>
+</body>
+</html>

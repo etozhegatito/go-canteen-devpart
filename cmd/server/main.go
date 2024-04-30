@@ -1,52 +1,43 @@
 package main
 
 import (
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go-canteen-devpart/auth"
 	"go-canteen-devpart/db"
 	"log"
-	"net/http"
 )
-
-type OrderRequest struct {
-	UserID    uint       `json:"user_id"`
-	CartItems []CartItem `json:"cart_items"`
-}
-
-type CartItem struct {
-	DishID   uint `json:"dish_id"`
-	Quantity int  `json:"quantity"`
-}
 
 func main() {
 	db.ConnectDatabase()
-	http.HandleFunc("/register", auth.RegisterHandler)
-	http.HandleFunc("/login", auth.LoginHandler)
 
-	log.Println("Starting server on :7070...")
-	if err := http.ListenAndServe(":7070", nil); err != nil {
-		log.Fatal("ListenAndServe: ", err)
-	}
 	router := gin.Default()
+
+	router.Use(cors.Default())
+
+	router.GET("/dishes", db.GetDishes)
 	router.POST("/orders", db.CreateOrder)
-	router.Run(":7071")
+	router.GET("/orders", func(c *gin.Context) {
+		c.File("web/templates/order.html")
+	})
 
-	//
-	//r := gin.Default() // Инициализируем Gin
-	//
-	//r.POST("/signup", api.SignUp) // Регистрируем роут для регистрации
-	//r.POST("/signin", api.SignIn) // Регистрируем роут для входа
-	//
-	//// Защищенные роуты
-	//authGroup := r.Group("/")
-	//authGroup.Use(api.AuthMiddleware()) // Применяем middleware для аутентификации
-	//{
-	//	// Тут будут защищенные роуты
-	//}
-	//
-	//log.Println("Starting server on :7070...")
-	//if err := r.Run(":7070"); err != nil { // Запускаем сервер через Gin
-	//	log.Fatal("Error starting server: ", err)
-	//}
+	router.POST("/signup", auth.SignUp) // SignUp - функция обработчик для регистрации
 
+	// Обеспечение доступа к HTML-страницам через пути /web/signup.html и /web/signin.html
+	router.GET("/signup", func(c *gin.Context) {
+		c.File("web/templates/signup.html")
+	})
+
+	router.POST("/signin", auth.SignIn) // SignUp - функция обработчик для регистрации
+
+	// Обеспечение доступа к HTML-страницам через пути /web/signup.html и /web/signin.html
+	router.GET("/signin", func(c *gin.Context) {
+		c.File("web/templates/signin.html")
+	})
+	router.NoRoute(func(c *gin.Context) {
+		log.Printf("Path: %s not found", c.Request.URL.Path)
+		c.JSON(404, gin.H{"code": "PAGE_NOT_FOUND", "message": "Page not found"})
+	})
+
+	router.Run(":8080")
 }

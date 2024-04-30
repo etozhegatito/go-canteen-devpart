@@ -1,46 +1,45 @@
 package auth
 
 import (
-	"encoding/json"
+	"github.com/gin-gonic/gin"
+	"go-canteen-devpart/db"
+	"golang.org/x/crypto/bcrypt"
+	"log"
 	"net/http"
 )
 
-// Credentials структура для данных аутентификации пользователя.
-type Credentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+var jwtKey = []byte("your_secret_key") // Replace with a secret key in a secure way
+
+// SignUp handles registration of a new user
+func SignUp(c *gin.Context) {
+	var user db.User
+	if err := c.ShouldBindJSON(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data!", "details": err.Error()})
+		return
+	}
+
+	// Hash the password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		return
+	}
+	user.Password = string(hashedPassword)
+
+	// Создание пользователя в базе данных
+	db.CreateUser(user, c)
+
+	c.JSON(http.StatusCreated, gin.H{"message": "User created successfully!"})
 }
 
-// RegisterHandler обрабатывает запросы на регистрацию новых пользователей.
-func RegisterHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Unsupported method", http.StatusMethodNotAllowed)
+// SignIn handles user login
+func SignIn(c *gin.Context) {
+	var creds db.Credentials
+	if err := c.ShouldBindJSON(&creds); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data!"})
 		return
 	}
 
-	var creds Credentials
-	err := json.NewDecoder(r.Body).Decode(&creds)
-	if err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-	// Здесь добавьте логику добавления нового пользователя в базу данных
-	// Это мог бы быть вызов функции, который вы реализуете в internal/db
-}
-
-// LoginHandler обрабатывает запросы на вход от пользователей.
-func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Unsupported method", http.StatusMethodNotAllowed)
-		return
-	}
-
-	var creds Credentials
-	err := json.NewDecoder(r.Body).Decode(&creds)
-	if err != nil {
-		http.Error(w, "Bad request", http.StatusBadRequest)
-		return
-	}
-	// Здесь добавьте логику проверки данных пользователя
-	// Это мог бы быть вызов функции, который вы реализуете в internal/db
+	log.Println("Credentials received:", creds)
+	db.CheckUser(creds, c)
 }

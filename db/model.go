@@ -2,24 +2,17 @@ package db
 
 import (
 	"gorm.io/gorm"
-	"time"
 )
 
 type User struct {
-	gorm.Model            // Включает поля ID, CreatedAt, UpdatedAt, DeletedAt
-	Name        string    `gorm:"not null"`
-	Surname     string    `gorm:"not null"`
-	Email       string    `gorm:"uniqueIndex;not null"`
-	Password    string    `gorm:"not null"`
-	Phone       string    `gorm:"not null"`
-	DateOfBirth time.Time `gorm:"type:date"`
-	IsAdmin     bool      `gorm:"default:false"`
-}
-
-// Credentials структура для данных аутентификации пользователя.
-type Credentials struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
+	gorm.Model        // Включает поля ID, CreatedAt, UpdatedAt, DeletedAt
+	Name       string `gorm:"not null"`
+	Surname    string `gorm:"not null"`
+	Email      string `gorm:"uniqueIndex;not null"`
+	Password   string `gorm:"not null"`
+	Phone      string `gorm:"not null"`
+	Age        int    `gorm:"not null;default:18"` // Возраст пользователя
+	IsAdmin    bool   `gorm:"default:false"`
 }
 
 type Dish struct {
@@ -55,4 +48,9 @@ type OrderRequest struct {
 type CartItem struct {
 	DishID   uint `json:"dish_id"`
 	Quantity int  `json:"quantity"`
+}
+
+type Credentials struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
