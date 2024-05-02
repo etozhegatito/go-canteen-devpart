@@ -31,20 +31,13 @@
             },
             body: JSON.stringify(formData)
         })
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error('Network response was not ok. Status: ' + response.status);
-                }
-                return response.json();
-            })
-            .then(data => {
-                console.log('Success:', data);
-                // Продолжение обработки успешного входа
-            })
-            .catch((error) => {
-                console.error('Error:', error);
+            .then(response => response.json())
+            .catch(error => {
+                console.error('SignIn Error:', error);
+                alert('SignIn Error: ' + error.message);
             });
     }
+
 
 </script>
 </body>

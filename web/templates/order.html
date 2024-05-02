@@ -41,7 +41,6 @@
 
 <script>
     // Assuming 'UserID' is known and constant for simplification
-    const userID = 1;
     let cart = [];
 
     document.addEventListener("DOMContentLoaded", function() {
@@ -96,7 +95,7 @@
             headers: {
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ user_id: userID, cart_items: cart })
+            body: JSON.stringify({ cart_items: cart })
         }).then(response => {
             if (response.ok) {
                 alert('Order placed successfully!');

@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <style>
+        table, th, td {
+            border: 1px solid black;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 10px;
+        }
+        th {
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+<h1>Admin Dashboard - Dish Management</h1>
+<h2>Add / Update Dish</h2>
+<form id="dishForm">
+    ID: <input type="text" id="id" disabled><br> <!-- Disabled for adding, enabled for updates -->
+    Name: <input type="text" id="name" required><br>
+    Price: <input type="number" id="price" step="0.01" required><br>
+    Description: <input type="text" id="description"><br>
+    In Stock: <input type="checkbox" id="inStock"><br>
+    Weight: <input type="number" id="weight"><br>
+    <button type="button" onclick="addOrUpdateDish()">Save</button>
+</form>
+<h2>Dishes</h2>
+<table id="dishesTable">
+    <thead>
+    <tr>
+        <th>ID</th>
+        <th>Name</th>
+        <th>Price</th>
+        <th>Description</th>
+        <th>In Stock</th>
+        <th>Weight</th>
+        <th>Actions</th>
+    </tr>
+    </thead>
+    <tbody>
+    <!-- Dishes will be loaded here -->
+    </tbody>
+</table>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        fetchDishes();
+    });
+
+    function fetchDishes() {
+        fetch('/dishes', {
+            method: 'GET'
+        }).then(response => response.json())
+            .then(dishes => {
+                const dishesTable = document.getElementById('dishesTable').getElementsByTagName('tbody')[0];
+                dishesTable.innerHTML = '';
+                dishes.forEach(dish => {
+                    let row = dishesTable.insertRow();
+                    row.innerHTML = `<td>${dish.ID}</td>
+                    <td>${dish.Name}</td>
+                    <td>${dish.Price}</td>
+                    <td>${dish.Description}</td>
+                    <td>${dish.InStock ? 'Yes' : 'No'}</td>
+                    <td>${dish.Weight}</td>
+                    <td>
+                        <button onclick='editDish(${JSON.stringify(dish).replace(/'/g, "&apos;")})'>Edit</button>
+                        <button onclick="deleteDish(${dish.ID})">Delete</button>
+                    </td>`;
+                });
+            });
+    }
+
+    function addOrUpdateDish() {
+        const id = document.getElementById('id').value;
+        const name = document.getElementById('name').value;
+        // Используйте parseFloat для конвертации строки в число с плавающей точкой
+        const price = parseFloat(document.getElementById('price').value);
+        const description = document.getElementById('description').value;
+        const inStock = document.getElementById('inStock').checked;
+        // Используйте parseInt для конвертации строки в целое число, или parseFloat, если вес может быть дробным
+        const weight = parseInt(document.getElementById('weight').value);
+        const method = id ? 'PUT' : 'POST';
+        const url = id ? '/dishes/' + id : '/dishes';
+
+        console.log("Method:", method);
+        console.log("URL:", url);
+        console.log("Data being sent:", { name, price, description, inStock, weight });
+
+        fetch(url, {
+            method: method,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ Name: name, Price: price, Description: description, InStock: inStock, Weight: weight })
+        }).then(response => {
+            console.log("Response status:", response.status);
+            if (response.ok) {
+                console.log('Dish saved successfully');
+                fetchDishes(); // Reload dishes
+            } else {
+                response.json().then(data => console.error('Failed to save dish:', data));
+            }
+        }).catch(error => console.error('Error in fetch:', error));
+    }
+
+    function editDish(dish) {
+        console.log('Function called: editDish', dish);
+        document.getElementById('id').value = dish.ID;
+        document.getElementById('name').value = dish.Name;
+        document.getElementById('price').value = dish.Price;
+        document.getElementById('description').value = dish.Description;
+        document.getElementById('inStock').checked = dish.InStock;
+        document.getElementById('weight').value = dish.Weight;
+    }
+
+    function deleteDish(id) {
+        fetch('/dishes/' + id, {
+            method: 'DELETE'
+        }).then(response => {
+            if (response.ok) {
+                console.log('Dish deleted successfully');
+                fetchDishes(); // Reload dishes
+            } else {
+                console.error('Failed to delete dish');
+            }
+        });
+    }
+</script>
+</body>
+</html>

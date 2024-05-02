@@ -8,8 +8,6 @@ import (
 	"net/http"
 )
 
-var jwtKey = []byte("your_secret_key") // Replace with a secret key in a secure way
-
 // SignUp handles registration of a new user
 func SignUp(c *gin.Context) {
 	var user db.User
@@ -42,4 +40,5 @@ func SignIn(c *gin.Context) {
 
 	log.Println("Credentials received:", creds)
 	db.CheckUser(creds, c)
+
 }

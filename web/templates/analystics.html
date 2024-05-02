@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics Dashboard</title>
+</head>
+<body>
+<h1>Analytics Dashboard</h1>
+<div>Total Orders: {{.TotalOrders}}</div>
+<div>Total Revenue: {{.TotalRevenue}}</div>
+<div>Average Bill: {{.AverageBill}}</div>
+<div>Total Users: {{.TotalUsers}}</div>
+<div>Most Popular Dish: {{.MostPopularDish.DishName}}</div>
+<div>Least Popular Dishes: {{range .LeastPopularDishes}}{{.DishName}} ({{.Count}}), {{end}}</div>
+</body>
+</html>

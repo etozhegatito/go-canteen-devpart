@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard</title>
+</head>
+<body>
+<h1>Welcome to Your Dashboard, {{.UserName}}</h1>
+<p>This is your secure dashboard page accessible only after authentication.</p>
+
+<!-- Кнопка для перехода на страницу Orders -->
+<button onclick="window.location.href='/orders';">View Orders</button>
+
+<!-- Кнопка для перехода на страницу Dishes -->
+<button onclick="window.location.href='/dishes';">View Dishes</button>
+
+<!-- Кнопка выхода -->
+<button onclick="logout()">Logout</button>
+
+<script>
+    function logout() {
+        fetch('/logout')
+            .then(response => {
+                if (response.ok) {
+                    window.location.href = '/signin';
+                } else {
+                    alert("Failed to logout.");
+                }
+            })
+            .catch(error => {
+                console.error('Logout Error:', error);
+            });
+    }
+</script>
+</body>
+</html>

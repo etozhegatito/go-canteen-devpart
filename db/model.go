@@ -54,3 +54,18 @@ type Credentials struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`
 }
+
+type AnalyticsData struct {
+	TotalOrders        int64
+	TotalRevenue       float64
+	AverageBill        float64
+	TotalUsers         int64
+	MostPopularDish    DishStat
+	LeastPopularDishes []DishStat
+}
+
+type DishStat struct {
+	DishID   uint
+	DishName string
+	Count    int
+}
