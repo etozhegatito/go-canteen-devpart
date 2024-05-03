@@ -8,37 +8,42 @@ import (
 	"net/http"
 )
 
-// SignUp handles registration of a new user
-func SignUp(c *gin.Context) {
+// SignUp для нового юзера
+func SignUp(requests *gin.Context) {
 	var user db.User
-	if err := c.ShouldBindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data!", "details": err.Error()})
+
+	//Проверка на валдиность данных
+	if err := requests.ShouldBindJSON(&user); err != nil {
+		requests.JSON(http.StatusBadRequest, gin.H{"error": "Wrong data, try again", "details": err.Error()})
 		return
 	}
 
-	// Hash the password
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	// Сразу хэшируем пароль
+	hashPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to hash password"})
+		requests.JSON(http.StatusInternalServerError, gin.H{"error": "Все по пизде пошло"})
 		return
 	}
-	user.Password = string(hashedPassword)
+	user.Password = string(hashPassword)
 
-	// Создание пользователя в базе данных
-	db.CreateUser(user, c)
-
-	c.JSON(http.StatusCreated, gin.H{"message": "User created successfully!"})
+	// Создание юзера в базе данных
+	db.CreateUser(user, requests)
+	requests.JSON(http.StatusCreated, gin.H{"message": "User created successfully!"})
 }
 
-// SignIn handles user login
-func SignIn(c *gin.Context) {
+// SignIn для входа юзера
+func SignIn(requests *gin.Context) {
+	//Временный Struct для создание шаблона входа
 	var creds db.Credentials
-	if err := c.ShouldBindJSON(&creds); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data!"})
+
+	//проверяем данные пользователся на валидность
+	if err := requests.ShouldBindJSON(&creds); err != nil {
+		requests.JSON(http.StatusBadRequest, gin.H{"error": "Все по пизде пошло, давай нормально"})
 		return
 	}
 
+	//Чекаем есть вообще такой юзер
 	log.Println("Credentials received:", creds)
-	db.CheckUser(creds, c)
+	db.CheckUser(creds, requests)
 
 }

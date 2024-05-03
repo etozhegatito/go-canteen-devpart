@@ -11,86 +11,98 @@ import (
 )
 
 func main() {
+	//Подключаемся к postgreSQL и иницализируем модели
 	db.ConnectDatabase()
 
 	// Инициализация хранилища для сессий
 	store := cookie.NewStore([]byte("secret"))
-
-	router := gin.Default()
-	router.LoadHTMLGlob("web/templates/*")
-	router.Use(sessions.Sessions("mysession", store))
-	router.Use(cors.Default())
+	gateway := gin.Default()
+	gateway.LoadHTMLGlob("web/templates/*")
+	gateway.Use(sessions.Sessions("mysession", store))
+	gateway.Use(cors.Default())
 
 	// Обеспечение доступа к статическим файлам
-	router.Static("/web", "./web")
+	gateway.Static("/web", "./web")
 
-	// Обработчики маршрутов для основных функций приложения
-	router.GET("/dishes", db.GetDishes)
-	router.POST("/dishes", db.CreateDish)
-	router.PUT("/dishes/:id", db.UpdateDish)
-	router.DELETE("/dishes/:id", db.DeleteDish)
+	// Обработчики маршрутов для функций приложения
+	// Просмотр и редактирование/обновление всех блюд
+	gateway.GET("/dishes", db.GetDishes)
+	gateway.POST("/dishes", db.CreateDish)
+	gateway.PUT("/dishes/:id", db.UpdateDish)
+	gateway.DELETE("/dishes/:id", db.DeleteDish)
 
-	router.POST("/orders", db.CreateOrder)
-	router.GET("/orders", func(c *gin.Context) {
-		c.File("web/templates/order.html")
+	// Сделать заказ
+	gateway.POST("/orders", db.CreateOrder)
+	gateway.GET("/orders", func(requests *gin.Context) {
+		requests.File("web/templates/order.html")
 	})
 
 	// Регистрация и вход
-	router.POST("/signup", auth.SignUp)
-	router.GET("/signup", func(c *gin.Context) {
-		c.File("web/templates/signup.html")
+	gateway.POST("/signup", auth.SignUp)
+	gateway.GET("/signup", func(requests *gin.Context) {
+		requests.File("web/templates/signup.html")
 	})
-	router.POST("/signin", auth.SignIn)
-	router.GET("/signin", func(c *gin.Context) {
-		c.File("web/templates/signin.html")
+	gateway.POST("/signin", auth.SignIn)
+	gateway.GET("/signin", func(requests *gin.Context) {
+		requests.File("web/templates/signin.html")
 	})
 
 	// Выход
-	router.GET("/logout", func(c *gin.Context) {
-		session := sessions.Default(c)
+	gateway.GET("/logout", func(requests *gin.Context) {
+		session := sessions.Default(requests)
 		session.Delete("user_id")
 		session.Save()
-		c.Redirect(http.StatusFound, "/signin")
+		requests.Redirect(http.StatusFound, "/signin")
 	})
 
-	// Панель администратора с проверкой административных прав
-	router.GET("/adminPage", AdminPageHandler)
-	router.GET("/dashboard", DashboardHandler)
-	router.GET("/analytics", db.GetAnalytics)
+	// Проверка административных прав и панель управление блюд
+	gateway.GET("/adminPage", AdminPageAuth)
+	gateway.GET("/analytics", db.GetAnalytics)
+
+	// Дашборд
+	gateway.GET("/dashboard", DashboardAuth)
+
 	// Запуск сервера
-	router.Run(":8080")
+	gateway.Run(":8080")
 }
 
-func AdminPageHandler(c *gin.Context) {
-	session := sessions.Default(c)
+func AdminPageAuth(requests *gin.Context) {
+	session := sessions.Default(requests)
 	userID := session.Get("user_id")
+
+	//проверка наличие авторизаций
 	if userID == nil {
-		c.Redirect(http.StatusFound, "/signin")
+		requests.Redirect(http.StatusFound, "/signin")
 		return
 	}
 
+	//проверка через базу данных наличие админки
 	user, err := db.GetUserByID(userID.(uint))
 	if err != nil || !user.IsAdmin {
-		c.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		requests.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
 		return
 	}
 
-	c.HTML(http.StatusOK, "adminPage.html", gin.H{"UserName": user.Name})
+	//доступ разрешен
+	requests.HTML(http.StatusOK, "adminPage.html", gin.H{"UserName": user.Name})
 }
 
-func DashboardHandler(c *gin.Context) {
-	session := sessions.Default(c)
+func DashboardAuth(requests *gin.Context) {
+	session := sessions.Default(requests)
 	userID := session.Get("user_id")
+
+	//проверка наличие авторизаций
 	if userID == nil {
-		c.Redirect(http.StatusFound, "/signin")
+		requests.Redirect(http.StatusFound, "/signin")
 		return
 	}
 
+	//Получаем данные юзера для отображение в дашборде, и обработчик ошибка на всякий случай
 	user, err := db.GetUserByID(userID.(uint))
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
+		requests.JSON(http.StatusInternalServerError, gin.H{"error": "User not found in database"})
 		return
 	}
 
-	c.HTML(http.StatusOK, "dashboard.html", gin.H{"UserName": user.Name})
+	requests.HTML(http.StatusOK, "dashboard.html", gin.H{"UserName": user.Name})
 }
