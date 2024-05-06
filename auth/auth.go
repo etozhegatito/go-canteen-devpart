@@ -1,8 +1,10 @@
 package auth
 
 import (
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"go-canteen-devpart/db"
+	"go-canteen-devpart/pkg/models"
 	"golang.org/x/crypto/bcrypt"
 	"log"
 	"net/http"
@@ -10,7 +12,7 @@ import (
 
 // SignUp для нового юзера
 func SignUp(requests *gin.Context) {
-	var user db.User
+	var user models.User
 
 	//Проверка на валдиность данных
 	if err := requests.ShouldBindJSON(&user); err != nil {
@@ -34,7 +36,7 @@ func SignUp(requests *gin.Context) {
 // SignIn для входа юзера
 func SignIn(requests *gin.Context) {
 	//Временный Struct для создание шаблона входа
-	var creds db.Credentials
+	var creds models.Credentials
 
 	//проверяем данные пользователся на валидность
 	if err := requests.ShouldBindJSON(&creds); err != nil {
@@ -46,4 +48,45 @@ func SignIn(requests *gin.Context) {
 	log.Println("Credentials received:", creds)
 	db.CheckUser(creds, requests)
 
+}
+
+func AdminPageAuth(requests *gin.Context) {
+	session := sessions.Default(requests)
+	userID := session.Get("user_id")
+
+	//проверка наличие авторизаций
+	if userID == nil {
+		requests.Redirect(http.StatusFound, "/signin")
+		return
+	}
+
+	//проверка через базу данных наличие админки
+	user, err := db.GetUserByID(userID.(uint))
+	if err != nil || !user.IsAdmin {
+		requests.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
+		return
+	}
+
+	//доступ разрешен
+	requests.HTML(http.StatusOK, "adminPage.html", gin.H{"UserName": user.Name})
+}
+
+func DashboardAuth(requests *gin.Context) {
+	session := sessions.Default(requests)
+	userID := session.Get("user_id")
+
+	//проверка наличие авторизаций
+	if userID == nil {
+		requests.Redirect(http.StatusFound, "/signin")
+		return
+	}
+
+	//Получаем данные юзера для отображение в дашборде, и обработчик ошибка на всякий случай
+	user, err := db.GetUserByID(userID.(uint))
+	if err != nil {
+		requests.JSON(http.StatusInternalServerError, gin.H{"error": "User not found in database"})
+		return
+	}
+
+	requests.HTML(http.StatusOK, "dashboard.html", gin.H{"UserName": user.Name})
 }

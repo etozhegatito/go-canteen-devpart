@@ -22,7 +22,7 @@ func main() {
 	gateway.Use(cors.Default())
 
 	// Обеспечение доступа к статическим файлам
-	gateway.Static("/web", "./web")
+	gateway.Static("/web/templates/", "./web")
 
 	// Обработчики маршрутов для функций приложения
 	// Просмотр и редактирование/обновление всех блюд
@@ -33,20 +33,20 @@ func main() {
 
 	// Сделать заказ
 	gateway.POST("/orders", db.CreateOrder)
-	gateway.GET("/orders", func(requests *gin.Context) {
-		requests.File("web/templates/order.html")
+	gateway.GET("/orders", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "order.html", gin.H{})
 	})
 
 	// Регистрация и вход
 	gateway.POST("/signup", auth.SignUp)
-	gateway.GET("/signup", func(requests *gin.Context) {
-		requests.File("web/templates/signup.html")
-	})
-	gateway.POST("/signin", auth.SignIn)
-	gateway.GET("/signin", func(requests *gin.Context) {
-		requests.File("web/templates/signin.html")
+	gateway.GET("/signup", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "signup.html", gin.H{})
 	})
 
+	gateway.POST("/signin", auth.SignIn)
+	gateway.GET("/signin", func(c *gin.Context) {
+		c.HTML(http.StatusOK, "signin.html", gin.H{})
+	})
 	// Выход
 	gateway.GET("/logout", func(requests *gin.Context) {
 		session := sessions.Default(requests)
@@ -56,53 +56,12 @@ func main() {
 	})
 
 	// Проверка административных прав и панель управление блюд
-	gateway.GET("/adminPage", AdminPageAuth)
-	gateway.GET("/analytics", db.GetAnalytics)
+	gateway.GET("/adminPage", auth.AdminPageAuth)
+	gateway.GET("/analytics", db.OrdersHandler)
 
 	// Дашборд
-	gateway.GET("/dashboard", DashboardAuth)
+	gateway.GET("/", auth.DashboardAuth)
 
 	// Запуск сервера
 	gateway.Run(":8080")
-}
-
-func AdminPageAuth(requests *gin.Context) {
-	session := sessions.Default(requests)
-	userID := session.Get("user_id")
-
-	//проверка наличие авторизаций
-	if userID == nil {
-		requests.Redirect(http.StatusFound, "/signin")
-		return
-	}
-
-	//проверка через базу данных наличие админки
-	user, err := db.GetUserByID(userID.(uint))
-	if err != nil || !user.IsAdmin {
-		requests.JSON(http.StatusForbidden, gin.H{"error": "Access denied"})
-		return
-	}
-
-	//доступ разрешен
-	requests.HTML(http.StatusOK, "adminPage.html", gin.H{"UserName": user.Name})
-}
-
-func DashboardAuth(requests *gin.Context) {
-	session := sessions.Default(requests)
-	userID := session.Get("user_id")
-
-	//проверка наличие авторизаций
-	if userID == nil {
-		requests.Redirect(http.StatusFound, "/signin")
-		return
-	}
-
-	//Получаем данные юзера для отображение в дашборде, и обработчик ошибка на всякий случай
-	user, err := db.GetUserByID(userID.(uint))
-	if err != nil {
-		requests.JSON(http.StatusInternalServerError, gin.H{"error": "User not found in database"})
-		return
-	}
-
-	requests.HTML(http.StatusOK, "dashboard.html", gin.H{"UserName": user.Name})
 }
