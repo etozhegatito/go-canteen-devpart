@@ -99,6 +99,7 @@ func UpdateDish(requests *gin.Context) {
 	}
 
 	var dish models.Dish
+	//Для откладки
 	if err := database.First(&dish, id).Error; err != nil {
 		requests.JSON(http.StatusNotFound, gin.H{"error": "Dish not found"})
 		return
@@ -109,56 +110,66 @@ func UpdateDish(requests *gin.Context) {
 		return
 	}
 
+	//Сохроняем изменение в базе данных
 	database.Save(&dish)
 	requests.JSON(http.StatusOK, dish)
 }
 
+// Для удаление блюдо из база данных
 func DeleteDish(requests *gin.Context) {
+	//получаем айди блюдо и удалаем блюдо
 	dishID := requests.Param("id")
 	if result := database.Delete(&models.Dish{}, dishID); result.Error != nil {
 		requests.JSON(http.StatusInternalServerError, gin.H{"error": result.Error.Error()})
 		return
 	}
 
+	//Успех!
 	requests.JSON(http.StatusOK, gin.H{"message": "Dish deleted successfully"})
 }
 
+// Создаем нового пользователя
 func CreateUser(user models.User, requests *gin.Context) {
+	//При форс мажорах узнаем в чем ошибка
 	if err := database.Create(&user).Error; err != nil {
 		requests.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user", "details": err.Error()})
 		return
 	}
 }
 
+// Проверяем наличие юзера в базе данных
 func CheckUser(creds models.Credentials, requests *gin.Context) {
 	var user models.User
+	//Для откладки
 	log.Println("Checking user with email:", creds.Email)
 
-	// Check if the user exists based on the provided email
+	// Ищем юзера по его емайлу
 	if result := database.Where("email = ?", creds.Email).First(&user); result.Error != nil {
 		log.Println("User not found:", result.Error)
 		requests.JSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
 		return
 	}
 
-	// Validate the user's password using bcrypt
+	//Хэшируем пароль и проверяем его правильность
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(creds.Password)); err != nil {
 		log.Println("Password comparison failed:", err)
-		requests.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid password"})
+		requests.JSON(http.StatusUnauthorized, gin.H{"error": "Неправильный пароль ты выбрал дружок!"})
 		return
 	}
 
-	// Save the user session after successful authentication
+	//После успешного захода сохроняем сессию
 	session := sessions.Default(requests)
 	session.Set("user_id", user.ID)
 	if err := session.Save(); err != nil {
-		log.Println("Session save failed:", err)
-		requests.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
+		log.Println("Сессия не сохранилась", err)
+		requests.JSON(http.StatusInternalServerError, gin.H{"error": "Провал при сохранений сессий"})
 		return
 	}
+	//Для проверки добавил логи
+	log.Println("Юзер успешно авторизовался!")
 
-	log.Println("User authenticated successfully, session established")
-
+	//Перенаправляем юзера
+	//Если админ - в админску страницу. Если обычный юзер то в Dashboard
 	if user.IsAdmin {
 		requests.Redirect(http.StatusFound, "/adminPage")
 	} else {
@@ -166,6 +177,7 @@ func CheckUser(creds models.Credentials, requests *gin.Context) {
 	}
 }
 
+// Просто находим юзера по его айди
 func GetUserByID(id uint) (*models.User, error) {
 	var user models.User
 	// Отправка запроса в базу данных и загрузка первой найденной записи в `user`
@@ -174,35 +186,46 @@ func GetUserByID(id uint) (*models.User, error) {
 		// Возвращаем nil и ошибку, если пользователь не найден или произошла другая ошибка
 		return nil, result.Error
 	}
-	// Возвращаем найденного пользователя и nil в качестве ошибки, если пользователь найден успешно
+	// Возвращаем найденного пользователя и nil, если пользователь найден успешно
 	return &user, nil
 }
 
-// Модуль db должен иметь функции для получения статистики
-
-// В db.go
-func FetchOrdersWithDetails() ([]models.Order, error) {
+// Для админа, общая статистика такие как средний чек, общая сумма чеков
+func ReportPage() ([]models.Order, float64, float64, error) {
 	var orders []models.Order
+	var totalSum float64
+	var averageCheck float64
 
-	// Используем Preload для загрузки всех связанных данных
-	if err := database.Preload("User").
-		Preload("Items.Dish"). // Загрузка всех блюд через элементы заказа
-		Find(&orders).Error; err != nil {
-		return nil, err
+	//Ищем все все заказы в базе данных
+	if err := database.Find(&orders).Error; err != nil {
+		return nil, 0, 0, err
 	}
 
-	return orders, nil
+	//высчитоваем общую сумму заказов
+	for _, order := range orders {
+		totalSum += order.TotalSum
+	}
+
+	//если заказ существует тогда сделаем рассчет среднего чека
+	if len(orders) > 0 {
+		averageCheck = totalSum / float64(len(orders))
+	}
+
+	return orders, totalSum, averageCheck, nil
 }
 
-func OrdersHandler(c *gin.Context) {
-	orders, err := FetchOrdersWithDetails()
+// Для репорт страницы
+func OrdersHandler(requests *gin.Context) {
+	orders, totalSum, avgCheck, err := ReportPage()
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении заказов"})
+		requests.JSON(http.StatusInternalServerError, gin.H{"error": "Ошибка при получении заказов"})
 		return
 	}
 
-	// Рендерим HTML-шаблон с полученными заказами
-	c.HTML(http.StatusOK, "analystics.html", gin.H{
-		"Orders": orders,
+	// Передаем заказы, общую сумму и средний чек в шаблон
+	requests.HTML(http.StatusOK, "analystics.html", gin.H{
+		"Orders":   orders,
+		"TotalSum": totalSum,
+		"AvgCheck": avgCheck,
 	})
 }

@@ -1,5 +1,6 @@
 package models
 
+// Struct для нашей корзины, т.к в одном заказе может быть несколько одинаковых блюд и все это надо сохранять
 type OrderItem struct {
 	ID       uint  `gorm:"primaryKey"`
 	OrderID  uint  `gorm:"not null"`

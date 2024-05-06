@@ -9,14 +9,13 @@
 
 {{ range .Orders }}
 <h2>Заказ #{{ .ID }}</h2>
-<p>Пользователь: {{ .User.Name }} {{ .User.Surname }} ({{ .User.Email }})</p>
+<p>Пользователь (ID): {{ .UserID }}</p>
 <p>Общая сумма: {{ .TotalSum }}</p>
-<h3>Блюда:</h3>
-<ul>
-    {{ range .OrderItems }}
-    <li>{{ .Dish.Name }} - Количество: {{ .Quantity }}</li>
-    {{ end }}
-</ul>
 {{ end }}
+
+<hr>
+<h3>Общая статистика:</h3>
+<p>Общая сумма всех заказов: {{ .TotalSum }}</p>
+<p>Средний чек: {{ .AvgCheck }}</p>
 </body>
 </html>

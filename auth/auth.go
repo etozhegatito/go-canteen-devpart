@@ -23,14 +23,14 @@ func SignUp(requests *gin.Context) {
 	// Сразу хэшируем пароль
 	hashPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if err != nil {
-		requests.JSON(http.StatusInternalServerError, gin.H{"error": "Все по пизде пошло"})
+		requests.JSON(http.StatusInternalServerError, gin.H{"error": "Все по **** пошло"})
 		return
 	}
 	user.Password = string(hashPassword)
 
 	// Создание юзера в базе данных
 	db.CreateUser(user, requests)
-	requests.JSON(http.StatusCreated, gin.H{"message": "User created successfully!"})
+	requests.JSON(http.StatusCreated, gin.H{"message": "Юзер создан!!"})
 }
 
 // SignIn для входа юзера
@@ -40,17 +40,17 @@ func SignIn(requests *gin.Context) {
 
 	//проверяем данные пользователся на валидность
 	if err := requests.ShouldBindJSON(&creds); err != nil {
-		requests.JSON(http.StatusBadRequest, gin.H{"error": "Все по пизде пошло, давай нормально"})
+		requests.JSON(http.StatusBadRequest, gin.H{"error": "Все по три букве пошло, давай нормально"})
 		return
 	}
 
 	//Чекаем есть вообще такой юзер
-	log.Println("Credentials received:", creds)
+	log.Println("Проверка данныз через логи:", creds)
 	db.CheckUser(creds, requests)
 
 }
 
-func AdminPageAuth(requests *gin.Context) {
+func AdminAuth(requests *gin.Context) {
 	session := sessions.Default(requests)
 	userID := session.Get("user_id")
 

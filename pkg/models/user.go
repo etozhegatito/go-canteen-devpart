@@ -2,6 +2,7 @@ package models
 
 import "gorm.io/gorm"
 
+// Стандартный user struct. Горм модель полезен при изменений данных юзера
 type User struct {
 	gorm.Model        // Включает поля ID, CreatedAt, UpdatedAt, DeletedAt
 	Name       string `gorm:"not null"`

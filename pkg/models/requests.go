@@ -1,5 +1,7 @@
 package models
 
+//Все временные struct для обработки request данных юзера. В базе данных они не сохраняются
+
 type OrderRequest struct {
 	UserID    uint       `json:"user_id"`
 	CartItems []CartItem `json:"cart_items"`
