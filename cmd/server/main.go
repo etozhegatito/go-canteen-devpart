@@ -65,5 +65,5 @@ func main() {
 	gateway.GET("/", auth.DashboardAuth)
 
 	// Запуск сервера
-	gateway.Run(":8080")
+	gateway.Run(":8070")
 }

@@ -2,53 +2,54 @@ version: '3.8'
 
 services:
 
-  db:
-    image: postgres:latest
+  db:   #сначала запускаем базу данных
+    image: postgres:latest  #будем работать с PostgreSQL
     environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: sdu
+      POSTGRES_USER: sdudent
+      POSTGRES_PASSWORD: kek
+      PGPORT: 5556  #Специально меняем порт
     ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - "5556:5556"
+    volumes: #для сохранение состояния PostgreSQL
+      - postgres_data:/var/lib/postgresql/data #том где будут храняться все данные из база данных.
     networks:
-      - app-network
+      - app-network   #чтобы сервисы были в одной network
 
-  pgadmin:
+  pgadmin:    #удобный иструмент для управление базой данных
     image: dpage/pgadmin4
-    environment:
-      PGADMIN_DEFAULT_EMAIL: "admin@example.com"
-      PGADMIN_DEFAULT_PASSWORD: "admin"
+    environment: #стандартный логин пароль для входа
+      PGADMIN_DEFAULT_EMAIL: "prof.aka777@gmail.com"
+      PGADMIN_DEFAULT_PASSWORD: "kaskelen"
     ports:
-      - "5050:80"
-    depends_on:
+      - "5090:80"   #будет доступен по ссылке http://localhost:5090
+    depends_on:   #будет ждать сперва запуска db
       - db
     links:
       - db
     networks:
-      - app-network
+      - app-network  #чтобы сервисы были в одной network
 
-  app:
+  app: #наш сервер где будет выполняться Go коды
     build: .
     ports:
-      - "8080:8080"
+      - "8070:8070"
     depends_on:
-      - db
+      - db  #запускаеться после db
     environment:
       DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: postgres
-      DB_PASSWORD: mysecretpassword
-      DB_NAME: postgres
+      DB_PORT: 5556
+      DB_USER: sdudent
+      DB_PASSWORD: kek
+      DB_NAME: sdu
     networks:
-      - app-network
+      - app-network #чтобы сервисы были в одной network
 
 
-volumes:
+volumes:    #для сохранение данных вне контейнера. Нужен для сохранения состояния
   postgres_data:
 
 
-networks:
+networks:   #Общая сеть
   app-network:
      driver: bridge

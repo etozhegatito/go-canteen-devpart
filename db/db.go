@@ -13,12 +13,12 @@ var err error
 
 func ConnectDatabase() {
 	//Данные для входа в базу данных
-	dbs := "host=db user=postgres dbname=postgres password=mysecretpassword port=5432"
+	dbs := "host=db user=sdudent dbname=sdu password=kek port=5556"
 	database, err = gorm.Open(postgres.Open(dbs), &gorm.Config{})
 
 	//Проверяем валидность данных для подключение DataBase
 	if err != nil {
-		log.Fatal("Не получилось подключиться, Данные хуйня, исправь", err)
+		log.Fatal("Не получилось подключиться, Данные фигня, исправь", err)
 	} else {
 		log.Println("Красавчик, база данных подключена!")
 	}
